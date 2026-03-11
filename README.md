@@ -1,5 +1,7 @@
 # InterCross-Toe
 
+This is an AI-coded prototype project. Codes are not carefully verified manually. Only the final result is checked.
+
 An H5-based twist on classic tic-tac-toe. Besides placing marks inside cells, players can also play on **grid intersections**, which create dynamic forbidden zones that can overlap and unlock.
 
 > 中文说明请见 `README.zh-CN.md`。
