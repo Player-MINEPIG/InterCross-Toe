@@ -8,6 +8,9 @@
 (function () {
   const CELL_SIZE = 44;
 
+  const ROOM_ID = 'room1'; // simple single-room demo
+  let applyingSnapshot = false;
+
   let gridSize = 5;
   let winLength = 4;
   let currentPlayer = 'X';
@@ -128,6 +131,104 @@
     gameOver = false;
   }
 
+  function normalizeStateShape() {
+    // cells
+    const nextCells = Array.from({ length: gridSize }, (_, i) =>
+      Array.from({ length: gridSize }, (_, j) =>
+        (cellBoard[i] && typeof cellBoard[i][j] !== 'undefined') ? cellBoard[i][j] : null
+      )
+    );
+    cellBoard = nextCells;
+
+    // intersections
+    const N = gridSize + 1;
+    const nextInter = Array.from({ length: N }, (_, i) =>
+      Array.from({ length: N }, (_, j) =>
+        (interBoard[i] && typeof interBoard[i][j] !== 'undefined') ? interBoard[i][j] : null
+      )
+    );
+    interBoard = nextInter;
+
+    // forbidden
+    const nextForbidden = Array.from({ length: gridSize }, (_, i) =>
+      Array.from({ length: gridSize }, (_, j) => {
+        const row = cellForbidden[i];
+        const raw = row && row[j];
+        if (raw instanceof Set) return raw;
+        if (Array.isArray(raw)) return new Set(raw);
+        return new Set();
+      })
+    );
+    cellForbidden = nextForbidden;
+  }
+
+  function serializeState() {
+    return {
+      gridSize,
+      winLength,
+      currentPlayer,
+      gameOver,
+      cellBoard,
+      interBoard,
+      cellForbidden: cellForbidden.map((row) =>
+        row.map((set) => Array.from(set))
+      ),
+    };
+  }
+
+  function applyState(state) {
+    if (!state) return;
+    gridSize = state.gridSize;
+    winLength = state.winLength;
+    currentPlayer = state.currentPlayer;
+    gameOver = !!state.gameOver;
+    cellBoard = state.cellBoard || [];
+    interBoard = state.interBoard || [];
+    cellForbidden = (state.cellForbidden || []).map((row) =>
+      row.map((arr) => new Set(arr || []))
+    );
+    normalizeStateShape();
+    inputGridSize.value = gridSize;
+    inputWinLength.value = winLength;
+    buildBoardDom();
+    updateBoardView();
+    if (gameOver) {
+      if (checkWin()) {
+        setStatusWinner();
+      } else if (checkDraw()) {
+        setStatusDraw();
+      }
+    }
+  }
+
+  function hasFirebase() {
+    return !!window.firebaseRealtime;
+  }
+
+  function pushState() {
+    if (!hasFirebase() || applyingSnapshot) return;
+    const { db, ref, set } = window.firebaseRealtime;
+    const state = serializeState();
+    try {
+      set(ref(db, `rooms/${ROOM_ID}`), state);
+    } catch (e) {
+      // ignore errors in prototype
+    }
+  }
+
+  function listenState() {
+    if (!hasFirebase()) return;
+    const { db, ref, onValue } = window.firebaseRealtime;
+    const roomRef = ref(db, `rooms/${ROOM_ID}`);
+    onValue(roomRef, (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      applyingSnapshot = true;
+      applyState(data);
+      applyingSnapshot = false;
+    });
+  }
+
   /** Whether current player can place on cell (i, j) */
   function canPlaceCell(i, j) {
     if (cellBoard[i][j] !== null) return false;
@@ -151,6 +252,7 @@
     cellBoard[i][j] = currentPlayer;
     nextTurn();
     updateBoardView();
+    pushState();
   }
 
   /** Place on intersection (ri, rj) */
@@ -160,6 +262,7 @@
     applyForbiddenZones(ri, rj, currentPlayer);
     nextTurn();
     updateBoardView();
+    pushState();
   }
 
   function nextTurn() {
@@ -259,9 +362,7 @@
     return cellFull && interFull;
   }
 
-  function renderBoard() {
-    initState();
-
+  function buildBoardDom() {
     const board = document.createElement('div');
     board.className = 'board';
 
@@ -324,6 +425,11 @@
     boardWrap.appendChild(board);
   }
 
+  function renderBoard() {
+    initState();
+    buildBoardDom();
+  }
+
   function updateBoardView() {
     const board = boardWrap.querySelector('.board');
     if (!board) return;
@@ -369,6 +475,7 @@
     renderBoard();
     currentPlayer = 'X';
     setStatusCurrent();
+    pushState();
   }
 
   function onCellClick(i, j) {
@@ -409,4 +516,8 @@
   inputGridSize.value = gridSize;
   inputWinLength.value = winLength;
   startNewGame();
+
+  window.onFirebaseReady = function () {
+    listenState();
+  };
 })();

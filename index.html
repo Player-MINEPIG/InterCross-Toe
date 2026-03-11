@@ -41,5 +41,29 @@
   </div>
 
   <script src="game.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRL-6Sj-3u1SRbdjy798R2UWtFCsEu0hQ",
+      authDomain: "intercross-toe.firebaseapp.com",
+      databaseURL: "https://intercross-toe-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "intercross-toe",
+      storageBucket: "intercross-toe.firebasestorage.app",
+      messagingSenderId: "158182387847",
+      appId: "1:158182387847:web:7ba64ca46cb10ff13f0822",
+      measurementId: "G-GEF52X11TV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Expose minimal realtime helpers for game.js
+    window.firebaseRealtime = { db, ref, set, onValue };
+    if (window.onFirebaseReady) {
+      window.onFirebaseReady();
+    }
+  </script>
 </body>
 </html>
