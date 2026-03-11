@@ -189,7 +189,7 @@ header h1 {
   cursor: default;
 }
 
-/* 禁区：仅对 X 禁 → X 色；仅对 O 禁 → O 色；重叠 → 保持原背景 */
+/* Forbidden zones: only forbidden for X → X color; only forbidden for O → O color; overlapping → keep original background */
 .board .cell.forbidden-x {
   background: rgba(122, 162, 247, 0.2);
 }
@@ -204,7 +204,7 @@ header h1 {
 .board .cell.cell-x { color: var(--x-color); }
 .board .cell.cell-o { color: var(--o-color); }
 
-/* 交叉点层：绝对定位，容器不接点击，仅小圆可点，避免误触格子 */
+/* Intersections layer: absolute positioning, container does not accept clicks, only small circles can be clicked to avoid touching cells */
 .intersections {
   position: absolute;
   top: 0;
@@ -220,7 +220,7 @@ header h1 {
   pointer-events: none;
 }
 
-/* 小圆（24px）精确对准格线交点，落子显示在交叉位置 */
+/* Small circle (24px) precisely aligned with grid line intersections, placing shows at intersection */
 .intersections .inter-row .inter-cell {
   position: absolute;
   left: var(--inter-left, 0);
@@ -252,7 +252,7 @@ header h1 {
 .intersections .inter-cell.inter-x { color: var(--x-color); }
 .intersections .inter-cell.inter-o { color: var(--o-color); }
 
-/* 小屏时棋盘可缩小 */
+/* When the screen is small, the board can be reduced */
 @media (max-width: 600px) {
   .app {
     grid-template-columns: 1fr;
