@@ -336,6 +336,7 @@
     return null;
   }
 
+  // Winning and draw are determined only on the cell board.
   function checkWin() {
     // Cell board: rows, columns, both diagonals
     for (let i = 0; i < gridSize; i++) {
@@ -365,41 +366,13 @@
       if (diag.length >= winLength && checkLineLine(diag, winLength)) return true;
     }
 
-    // Intersection board: rows, columns, both diagonals
-    const N = gridSize + 1;
-    for (let i = 0; i < N; i++) {
-      const w = checkLineLine(interBoard[i], winLength);
-      if (w) return true;
-    }
-    for (let j = 0; j < N; j++) {
-      const col = interBoard.map((row) => row[j]);
-      const w = checkLineLine(col, winLength);
-      if (w) return true;
-    }
-    for (let d = -(N - 1); d <= N - 1; d++) {
-      const diag = [];
-      for (let i = 0; i < N; i++) {
-        const j = i + d;
-        if (j >= 0 && j < N) diag.push(interBoard[i][j]);
-      }
-      if (diag.length >= winLength && checkLineLine(diag, winLength)) return true;
-    }
-    for (let d = -(N - 1); d <= N - 1; d++) {
-      const diag = [];
-      for (let i = 0; i < N; i++) {
-        const j = N - 1 - i + d;
-        if (j >= 0 && j < N) diag.push(interBoard[i][j]);
-      }
-      if (diag.length >= winLength && checkLineLine(diag, winLength)) return true;
-    }
-
     return false;
   }
 
   function checkDraw() {
+    // Draw when all cells are filled and nobody has won (checkWin 在外层先调用)
     const cellFull = cellBoard.every((row) => row.every((v) => v !== null));
-    const interFull = interBoard.every((row) => row.every((v) => v !== null));
-    return cellFull && interFull;
+    return cellFull;
   }
 
   function buildBoardDom() {
