@@ -362,8 +362,8 @@
   }
 
   function startNewGame() {
-    gridSize = Math.max(3, Math.min(12, parseInt(inputGridSize.value, 10) || 5));
-    winLength = Math.max(2, Math.min(Math.min(gridSize, gridSize + 1), parseInt(inputWinLength.value, 10) || 3));
+    gridSize = Math.max(3, Math.min(12, parseInt(inputGridSize.value, 10) || gridSize));
+    winLength = Math.max(2, Math.min(Math.min(gridSize, gridSize + 1), parseInt(inputWinLength.value, 10) || winLength));
     inputGridSize.value = gridSize;
     inputWinLength.value = winLength;
     renderBoard();
@@ -405,5 +405,8 @@
 
   applyStaticTexts();
   updateLangButtons();
+  // initialize inputs from default state, then start the first game
+  inputGridSize.value = gridSize;
+  inputWinLength.value = winLength;
   startNewGame();
 })();

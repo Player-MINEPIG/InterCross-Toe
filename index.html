@@ -23,16 +23,16 @@
       <h2 id="settingsTitle">Settings</h2>
       <div class="field">
         <label for="gridSize" id="labelGridSize">Board size</label>
-        <input type="number" id="gridSize" min="3" max="12" value="5" />
+        <input type="number" id="gridSize" min="3" max="12" />
         <span class="hint" id="hintGridSize">N×N cells, (N+1)×(N+1) intersections</span>
       </div>
       <div class="field">
         <label for="winLength" id="labelWinLength">Win length</label>
-        <input type="number" id="winLength" min="2" max="10" value="4" />
+        <input type="number" id="winLength" min="2" max="10" />
         <span class="hint" id="hintWinLength">K in a line to win</span>
       </div>
       <button type="button" id="btnNewGame" class="btn primary">New game</button>
-      <div class="status" id="gameStatus">Current: X</div>
+      <div class="status" id="gameStatus"></div>
     </aside>
 
     <main class="game-area">
