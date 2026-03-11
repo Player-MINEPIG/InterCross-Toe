@@ -1,22 +1,50 @@
 /**
- * InterCross-Toe 游戏逻辑
- * - 可在格子或交叉处落子
- * - 交叉处落子后，对手在该交叉四格内为禁区；禁区重叠则重叠格解禁
- * - 支持自定义棋盘大小与连子数
+ * InterCross-Toe game logic
+ * - Players can place on cells or intersections.
+ * - Placing on an intersection forbids the 4 surrounding cells for the opponent; overlapping forbidden cells are unlocked.
+ * - Grid size and win length are configurable.
  */
 
 (function () {
   const CELL_SIZE = 44;
 
   let gridSize = 5;
-  let winLength = 3;
+  let winLength = 4;
   let currentPlayer = 'X';
+  let currentLang = 'en';
 
-  // 格子棋盘: gridSize x gridSize, 值为 null | 'X' | 'O'
+  const i18n = {
+    en: {
+      subtitle: 'Play on cells or intersections · Overlapping forbidden zones unlock',
+      settingsTitle: 'Settings',
+      gridSizeLabel: 'Board size',
+      gridSizeHint: 'N×N cells, (N+1)×(N+1) intersections',
+      winLengthLabel: 'Win length',
+      winLengthHint: 'K in a line to win',
+      newGame: 'New game',
+      statusCurrent: (p) => `Current: ${p}`,
+      statusWinner: (p) => `Winner: ${p}`,
+      statusDraw: 'Draw',
+    },
+    zh: {
+      subtitle: '在格子或交叉处落子 · 禁区重叠可解禁',
+      settingsTitle: '设置',
+      gridSizeLabel: '棋盘大小',
+      gridSizeHint: 'N×N 格子，(N+1)×(N+1) 交叉点',
+      winLengthLabel: '连子数量',
+      winLengthHint: '同一直线 K 子即胜',
+      newGame: '新对局',
+      statusCurrent: (p) => `当前：${p}`,
+      statusWinner: (p) => `获胜：${p}`,
+      statusDraw: '平局',
+    },
+  };
+
+  // Grid cells: gridSize x gridSize, value: null | 'X' | 'O'
   let cellBoard = [];
-  // 交叉点棋盘: (gridSize+1) x (gridSize+1)
+  // Intersection board: (gridSize+1) x (gridSize+1)
   let interBoard = [];
-  // 每个格子的禁区标记: cellForbidden[i][j] = Set of 'X'|'O'，表示被谁禁了；size===2 表示重叠解禁
+  // Forbidden info per cell: cellForbidden[i][j] = Set of 'X'|'O'; size===2 means overlapped and unlocked
   let cellForbidden = [];
   let gameOver = false;
 
@@ -26,11 +54,56 @@
   const inputWinLength = document.getElementById('winLength');
   const btnNewGame = document.getElementById('btnNewGame');
 
+  function t(key, ...args) {
+    const pack = i18n[currentLang] || i18n.en;
+    const val = pack[key];
+    if (typeof val === 'function') return val(...args);
+    return val ?? '';
+  }
+
+  function applyStaticTexts() {
+    const subtitleEl = document.getElementById('subtitle');
+    const settingsTitleEl = document.getElementById('settingsTitle');
+    const labelGridSizeEl = document.getElementById('labelGridSize');
+    const hintGridSizeEl = document.getElementById('hintGridSize');
+    const labelWinLengthEl = document.getElementById('labelWinLength');
+    const hintWinLengthEl = document.getElementById('hintWinLength');
+    const btnNewGameEl = document.getElementById('btnNewGame');
+
+    if (subtitleEl) subtitleEl.textContent = t('subtitle');
+    if (settingsTitleEl) settingsTitleEl.textContent = t('settingsTitle');
+    if (labelGridSizeEl) labelGridSizeEl.textContent = t('gridSizeLabel');
+    if (hintGridSizeEl) hintGridSizeEl.textContent = t('gridSizeHint');
+    if (labelWinLengthEl) labelWinLengthEl.textContent = t('winLengthLabel');
+    if (hintWinLengthEl) hintWinLengthEl.textContent = t('winLengthHint');
+    if (btnNewGameEl) btnNewGameEl.textContent = t('newGame');
+  }
+
+  function updateLangButtons() {
+    const btnEn = document.getElementById('btnLangEn');
+    const btnZh = document.getElementById('btnLangZh');
+    if (!btnEn || !btnZh) return;
+    btnEn.classList.toggle('active', currentLang === 'en');
+    btnZh.classList.toggle('active', currentLang === 'zh');
+  }
+
+  function setStatusCurrent() {
+    gameStatus.textContent = t('statusCurrent', currentPlayer);
+  }
+
+  function setStatusWinner() {
+    gameStatus.textContent = t('statusWinner', currentPlayer);
+  }
+
+  function setStatusDraw() {
+    gameStatus.textContent = t('statusDraw');
+  }
+
   function getOpponent(p) {
     return p === 'X' ? 'O' : 'X';
   }
 
-  /** 交叉点 (ri, rj) 对应的四个格子（在边界内的） */
+  /** 4 surrounding cells of intersection (ri, rj) within bounds */
   function getCellsAroundIntersection(ri, rj) {
     const cells = [];
     for (const di of [0, 1]) {
@@ -55,16 +128,16 @@
     gameOver = false;
   }
 
-  /** 当前玩家是否可以在格子 (i, j) 落子 */
+  /** Whether current player can place on cell (i, j) */
   function canPlaceCell(i, j) {
     if (cellBoard[i][j] !== null) return false;
     const f = cellForbidden[i][j];
-    if (f.size === 2) return true; // 重叠解禁
+    if (f.size === 2) return true; // overlapped forbidden zones → unlocked
     if (f.has(currentPlayer)) return false;
     return true;
   }
 
-  /** 在交叉点落子后，更新四格禁区（对手被禁） */
+  /** Apply forbidden zones for opponent after placing on intersection */
   function applyForbiddenZones(ri, rj, player) {
     const opp = getOpponent(player);
     for (const [r, c] of getCellsAroundIntersection(ri, rj)) {
@@ -72,7 +145,7 @@
     }
   }
 
-  /** 在格子 (i, j) 落子 */
+  /** Place on cell (i, j) */
   function placeCell(i, j) {
     if (gameOver || !canPlaceCell(i, j)) return;
     cellBoard[i][j] = currentPlayer;
@@ -80,7 +153,7 @@
     updateBoardView();
   }
 
-  /** 在交叉点 (ri, rj) 落子 */
+  /** Place on intersection (ri, rj) */
   function placeIntersection(ri, rj) {
     if (gameOver || interBoard[ri][rj] !== null) return;
     interBoard[ri][rj] = currentPlayer;
@@ -92,19 +165,19 @@
   function nextTurn() {
     if (checkWin()) {
       gameOver = true;
-      gameStatus.textContent = `获胜：${currentPlayer}`;
+      setStatusWinner();
       return;
     }
     if (checkDraw()) {
       gameOver = true;
-      gameStatus.textContent = '平局';
+      setStatusDraw();
       return;
     }
     currentPlayer = getOpponent(currentPlayer);
-    gameStatus.textContent = `当前：${currentPlayer}`;
+    setStatusCurrent();
   }
 
-  /** 检查某条线是否由同一玩家在格子或交叉点上连成 winLength 子 */
+  /** Check whether one line has winLength same marks */
   function checkLineLine(arr, len) {
     let count = 1;
     let last = arr[0];
@@ -121,7 +194,7 @@
   }
 
   function checkWin() {
-    // 格子棋盘：行、列、两条对角线方向
+    // Cell board: rows, columns, both diagonals
     for (let i = 0; i < gridSize; i++) {
       const row = cellBoard[i];
       const w = checkLineLine(row, winLength);
@@ -149,7 +222,7 @@
       if (diag.length >= winLength && checkLineLine(diag, winLength)) return true;
     }
 
-    // 交叉点棋盘：行、列、两条对角线
+    // Intersection board: rows, columns, both diagonals
     const N = gridSize + 1;
     for (let i = 0; i < N; i++) {
       const w = checkLineLine(interBoard[i], winLength);
@@ -284,7 +357,7 @@
     });
 
     if (!gameOver) {
-      gameStatus.textContent = `当前：${currentPlayer}`;
+      setStatusCurrent();
     }
   }
 
@@ -294,7 +367,8 @@
     inputGridSize.value = gridSize;
     inputWinLength.value = winLength;
     renderBoard();
-    gameStatus.textContent = '当前：X';
+    currentPlayer = 'X';
+    setStatusCurrent();
   }
 
   function onCellClick(i, j) {
@@ -308,8 +382,28 @@
   }
 
   btnNewGame.addEventListener('click', startNewGame);
+  const btnLangEn = document.getElementById('btnLangEn');
+  const btnLangZh = document.getElementById('btnLangZh');
+  if (btnLangEn) {
+    btnLangEn.addEventListener('click', () => {
+      currentLang = 'en';
+      applyStaticTexts();
+      updateLangButtons();
+      if (!gameOver) setStatusCurrent();
+    });
+  }
+  if (btnLangZh) {
+    btnLangZh.addEventListener('click', () => {
+      currentLang = 'zh';
+      applyStaticTexts();
+      updateLangButtons();
+      if (!gameOver) setStatusCurrent();
+    });
+  }
   inputGridSize.addEventListener('change', () => startNewGame());
   inputWinLength.addEventListener('change', () => startNewGame());
 
+  applyStaticTexts();
+  updateLangButtons();
   startNewGame();
 })();

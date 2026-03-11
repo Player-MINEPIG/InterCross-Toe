@@ -1,26 +1,31 @@
 # InterCross-Toe
 
-基于 H5 的改进井字棋：除格子外，还可在**线的交叉处**落子，并带有禁区与重叠解禁规则。
+An H5-based twist on classic tic-tac-toe. Besides placing marks inside cells, players can also play on **grid intersections**, which create dynamic forbidden zones that can overlap and unlock.
 
-## 规则简述
+> 中文说明请见 `README.zh-CN.md`。
 
-- **落子位置**：可在格子内落子（传统），也可在格线的交叉点落子。
-- **禁区**：在交叉点落子后，**对手**不能在该交叉点相邻的四个格子内落子（该四格对该对手为禁区）。
-- **重叠解禁**：若两名玩家因各自在交叉点落子而令同一格子成为禁区，则该格子视为解禁，双方均可再在该格落子。
-- **胜利**：在格子棋盘或交叉点棋盘上任一直线（行/列/对角线）连成 **K 子**即胜（默认 5×5 棋盘、3 子连线）。
+## Core rules
 
-## 自定义设置（原型用）
+- **Where to place**: You can place on
+  - a **cell** (traditional tic-tac-toe), or
+  - an **intersection** where grid lines cross.
+- **Forbidden zones**: When you place on an intersection, the **4 surrounding cells** become forbidden **for your opponent**.
+- **Overlapping unlock**: If both players’ forbidden zones cover the same cell, that cell is unlocked again and becomes playable for both players.
+- **Winning**: On either the cell board or the intersection board, getting **K in a straight line** (row / column / diagonal) wins. Default: 5×5 grid, 3-in-a-row.
 
-- **棋盘大小**：N×N 格子，对应 (N+1)×(N+1) 个交叉点（如 5×5 即 36 个交叉点）。
-- **连子数量**：同一线上连成几子即判胜（会随棋盘大小自动限制范围）。
+## Configurable prototype
 
-## 本地运行
+- **Board size**: N×N cells, with (N+1)×(N+1) intersections (e.g. 5×5 gives 36 intersections).
+- **Win length**: How many in a line count as a win (clamped to a sensible range based on the board size).
+
+## Running locally
 
 ```bash
-# 进入项目目录后任选一种方式
+# From project root, pick one:
 npx serve .
-# 或
+# or
 python3 -m http.server 8765
 ```
 
-浏览器访问 `http://localhost:8765`（或对应端口）打开 `index.html` 即可。
+Then open `http://localhost:8765` (or whatever port you used) and load `index.html`.
+
