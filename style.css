@@ -1,0 +1,256 @@
+/* InterCross-Toe 样式 */
+:root {
+  --bg: #1a1b26;
+  --surface: #24283b;
+  --line: #414868;
+  --cell-hover: #364a7c;
+  --forbidden: #565f89;
+  --x-color: #7aa2f7;
+  --o-color: #f7768e;
+  --text: #c0caf5;
+  --muted: #787c99;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 1rem;
+  max-width: 100%;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+header {
+  grid-column: 1 / -1;
+}
+
+header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.config-panel {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 1rem;
+  height: fit-content;
+}
+
+.config-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+}
+
+.field input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.field .hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.btn {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn.primary {
+  background: var(--x-color);
+  color: var(--bg);
+  font-weight: 500;
+}
+
+.btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.status {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.game-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  overflow: auto;
+}
+
+.board-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.board {
+  display: inline-block;
+  position: relative;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.board table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.board .cell {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 24px;
+  font-weight: 600;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.board .cell:hover:not(.taken):not(.forbidden) {
+  background: var(--cell-hover);
+}
+
+.board .cell.taken {
+  cursor: default;
+}
+
+/* 禁区：仅对 X 禁 → X 色；仅对 O 禁 → O 色；重叠 → 保持原背景 */
+.board .cell.forbidden-x {
+  background: rgba(122, 162, 247, 0.2);
+}
+.board .cell.forbidden-o {
+  background: rgba(247, 118, 142, 0.2);
+}
+.board .cell.forbidden-x.forbidden-o,
+.board .cell.forbidden-overlap {
+  background: transparent;
+}
+.board .cell.forbidden-current {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.board .cell.cell-x { color: var(--x-color); }
+.board .cell.cell-o { color: var(--o-color); }
+
+/* 交叉点层：绝对定位，容器不接点击，仅小圆可点，避免误触格子 */
+.intersections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.intersections .inter-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* 小圆（24px）精确对准格线交点，落子显示在交叉位置 */
+.intersections .inter-row .inter-cell {
+  position: absolute;
+  left: var(--inter-left, 0);
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50%;
+  transition: background 0.15s, transform 0.1s;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.intersections .inter-row .inter-cell:hover:not(.taken) {
+  transform: translate(-50%, 0) scale(1.2);
+}
+
+.intersections .inter-cell.taken {
+  cursor: default;
+}
+
+.intersections .inter-cell.inter-x { color: var(--x-color); }
+.intersections .inter-cell.inter-o { color: var(--o-color); }
+
+/* 小屏时棋盘可缩小 */
+@media (max-width: 600px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .board .cell {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 18px;
+  }
+
+  .intersections .inter-row .inter-cell {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    top: -10px;
+    font-size: 12px;
+  }
+}
