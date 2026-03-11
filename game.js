@@ -396,7 +396,6 @@
           if (forbidden.has('X')) td.classList.add('forbidden-x');
           if (forbidden.has('O')) td.classList.add('forbidden-o');
           if (forbidden.size === 2) td.classList.add('forbidden-overlap');
-          if (forbidden.size === 1 && forbidden.has(currentPlayer)) td.classList.add('forbidden-current');
           td.addEventListener('click', () => placeCell(i, j));
         }
         tr.appendChild(td);
@@ -461,7 +460,6 @@
         if (forbidden.has('X')) td.classList.add('forbidden-x');
         if (forbidden.has('O')) td.classList.add('forbidden-o');
         if (forbidden.size === 2) td.classList.add('forbidden-overlap');
-        if (forbidden.size === 1 && forbidden.has(currentPlayer)) td.classList.add('forbidden-current');
       }
     });
 

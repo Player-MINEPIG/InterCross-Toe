@@ -200,10 +200,6 @@ header h1 {
 .board .cell.forbidden-overlap {
   background: transparent;
 }
-.board .cell.forbidden-current {
-  cursor: not-allowed;
-  opacity: 0.85;
-}
 
 .board .cell.cell-x { color: var(--x-color); }
 .board .cell.cell-o { color: var(--o-color); }
