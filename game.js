@@ -163,6 +163,7 @@
   }
 
   function serializeState() {
+    // Forbidden is not serialized anymore
     return {
       gridSize,
       winLength,
@@ -170,23 +171,52 @@
       gameOver,
       cellBoard,
       interBoard,
-      cellForbidden: cellForbidden.map((row) =>
-        row.map((set) => Array.from(set))
-      ),
     };
   }
 
   function applyState(state) {
     if (!state) return;
-    gridSize = state.gridSize;
-    winLength = state.winLength;
-    currentPlayer = state.currentPlayer;
+
+    gridSize = state.gridSize || gridSize;
+    winLength = state.winLength || winLength;
+    currentPlayer = state.currentPlayer || currentPlayer || 'X';
     gameOver = !!state.gameOver;
-    cellBoard = state.cellBoard || [];
-    interBoard = state.interBoard || [];
-    cellForbidden = (state.cellForbidden || []).map((row) =>
-      row.map((arr) => new Set(arr || []))
+
+    // Helper: coerce arbitrary nested structure (array/object) to dense 2D array
+    function coerce2D(raw, rows, cols) {
+      const outer = Array.isArray(raw)
+        ? raw
+        : raw && typeof raw === 'object'
+        ? Object.values(raw)
+        : [];
+      return Array.from({ length: rows }, (_, i) =>
+        Array.from({ length: cols }, (_, j) => {
+          const row = outer[i];
+          return row && typeof row[j] !== 'undefined' ? row[j] : null;
+        })
+      );
+    }
+
+    // Cells
+    cellBoard = coerce2D(state.cellBoard, gridSize, gridSize);
+
+    // Intersections
+    const N = gridSize + 1;
+    interBoard = coerce2D(state.interBoard, N, N);
+
+    // Recalculate forbidden zones based on intersections, avoid position mismatch from remote old data
+    cellForbidden = Array.from({ length: gridSize }, () =>
+      Array.from({ length: gridSize }, () => new Set())
     );
+    for (let ri = 0; ri < N; ri++) {
+      for (let rj = 0; rj < N; rj++) {
+        const p = interBoard[ri][rj];
+        if (p === 'X' || p === 'O') {
+          applyForbiddenZones(ri, rj, p);
+        }
+      }
+    }
+
     normalizeStateShape();
     inputGridSize.value = gridSize;
     inputWinLength.value = winLength;
@@ -231,7 +261,17 @@
 
   /** Whether current player can place on cell (i, j) */
   function canPlaceCell(i, j) {
-    if (cellBoard[i][j] !== null) return false;
+    // Defensive guards against malformed state from remote
+    if (!cellBoard[i]) return false;
+    if (typeof cellBoard[i][j] !== 'undefined' && cellBoard[i][j] !== null) return false;
+
+    if (!cellForbidden[i]) {
+      cellForbidden[i] = Array.from({ length: gridSize }, () => new Set());
+    }
+    if (!cellForbidden[i][j]) {
+      cellForbidden[i][j] = new Set();
+    }
+
     const f = cellForbidden[i][j];
     if (f.size === 2) return true; // overlapped forbidden zones → unlocked
     if (f.has(currentPlayer)) return false;
