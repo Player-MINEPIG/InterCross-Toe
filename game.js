@@ -40,6 +40,8 @@
       roomEnterHint: 'Enter a room number (1–9) on the left and click Join to play.',
       firstVisitMessage: 'Welcome! Enter a room number (1–9) in the left panel and click Join to enter a game room.',
       gotIt: 'Got it',
+      confirmNewGame: 'Start a new game?',
+      modalCancel: 'Cancel',
     },
     zh: {
       subtitle: '在格子或交叉处落子 · 禁区重叠可解禁',
@@ -59,6 +61,8 @@
       roomEnterHint: '请在左侧输入房间编号 (1–9) 并点击「加入」进入对局。',
       firstVisitMessage: '欢迎！请在左侧输入房间编号 (1–9)，点击「加入」进入对应房间。',
       gotIt: '知道了',
+      confirmNewGame: '要开始新对局吗？',
+      modalCancel: '取消',
     },
   };
 
@@ -371,11 +375,13 @@
     if (checkWin()) {
       gameOver = true;
       setStatusWinner();
+      showGameOverModal(true);
       return;
     }
     if (checkDraw()) {
       gameOver = true;
       setStatusDraw();
+      showGameOverModal(false);
       return;
     }
     currentPlayer = getOpponent(currentPlayer);
@@ -552,6 +558,65 @@
     pushState();
   }
 
+  function showConfirmNewGameModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', t('confirmNewGame'));
+    const box = document.createElement('div');
+    box.className = 'modal-box';
+    const p = document.createElement('p');
+    p.className = 'modal-message';
+    p.textContent = t('confirmNewGame');
+    const actions = document.createElement('div');
+    actions.className = 'modal-actions';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn modal-btn-secondary';
+    cancelBtn.textContent = t('modalCancel');
+    cancelBtn.addEventListener('click', () => overlay.remove());
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.className = 'btn primary modal-btn';
+    okBtn.textContent = t('newGame');
+    okBtn.addEventListener('click', () => {
+      overlay.remove();
+      startNewGame();
+    });
+    actions.appendChild(cancelBtn);
+    actions.appendChild(okBtn);
+    box.appendChild(p);
+    box.appendChild(actions);
+    overlay.appendChild(box);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
+
+  function showGameOverModal(isWin) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', isWin ? t('statusWinner', currentPlayer) : t('statusDraw'));
+    const box = document.createElement('div');
+    box.className = 'modal-box';
+    const p = document.createElement('p');
+    p.className = 'modal-message';
+    p.textContent = isWin ? t('statusWinner', currentPlayer) : t('statusDraw');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn primary modal-btn';
+    btn.textContent = t('newGame');
+    btn.addEventListener('click', () => {
+      overlay.remove();
+      startNewGame();
+    });
+    box.appendChild(p);
+    box.appendChild(btn);
+    overlay.appendChild(box);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
+
   function onCellClick(i, j) {
     placeCell(i, j);
     updateBoardView();
@@ -562,7 +627,10 @@
     updateBoardView();
   }
 
-  btnNewGame.addEventListener('click', startNewGame);
+  btnNewGame.addEventListener('click', () => {
+    if (roomId === 0) return;
+    showConfirmNewGameModal();
+  });
   const btnLangEn = document.getElementById('btnLangEn');
   const btnLangZh = document.getElementById('btnLangZh');
   if (btnLangEn) {
