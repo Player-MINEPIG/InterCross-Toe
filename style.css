@@ -140,6 +140,59 @@ header h1 {
   color: var(--muted);
 }
 
+.room-panel {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.room-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.no-room-hint {
+  color: var(--muted);
+  text-align: center;
+  padding: 2rem 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* In-page modal: same style as app, supports i18n */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-box {
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 360px;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.modal-message {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.modal-btn {
+  width: 100%;
+}
+
 .game-area {
   display: flex;
   align-items: center;

@@ -33,6 +33,16 @@
       </div>
       <button type="button" id="btnNewGame" class="btn primary">New game</button>
       <div class="status" id="gameStatus"></div>
+
+      <div class="room-panel">
+        <h2 id="roomTitle">Room</h2>
+        <div class="field">
+          <label for="inputRoom" id="roomLabel">Room number (1–9)</label>
+          <input type="number" id="inputRoom" min="0" max="9" value="0" />
+          <span class="hint" id="roomHint">Enter 1–9 to join. 0 = not in a room.</span>
+        </div>
+        <button type="button" id="btnJoinRoom" class="btn primary">Join</button>
+      </div>
     </aside>
 
     <main class="game-area">

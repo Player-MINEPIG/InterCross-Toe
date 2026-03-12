@@ -8,8 +8,13 @@
 (function () {
   const CELL_SIZE = 44;
 
-  const ROOM_ID = 'room1'; // simple single-room demo
+  let roomId = 0; // 0 = not in a room; 1–9 = room number
+  let unsubscribeRoom = null;
   let applyingSnapshot = false;
+
+  function getRoomKey() {
+    return roomId >= 1 && roomId <= 9 ? 'room' + roomId : null;
+  }
 
   let gridSize = 5;
   let winLength = 4;
@@ -28,6 +33,13 @@
       statusCurrent: (p) => `Current: ${p}`,
       statusWinner: (p) => `Winner: ${p}`,
       statusDraw: 'Draw',
+      roomTitle: 'Room',
+      roomLabel: 'Room number (1–9)',
+      roomHint: 'Enter 1–9 to join. 0 = not in a room.',
+      joinBtn: 'Join',
+      roomEnterHint: 'Enter a room number (1–9) on the left and click Join to play.',
+      firstVisitMessage: 'Welcome! Enter a room number (1–9) in the left panel and click Join to enter a game room.',
+      gotIt: 'Got it',
     },
     zh: {
       subtitle: '在格子或交叉处落子 · 禁区重叠可解禁',
@@ -40,6 +52,13 @@
       statusCurrent: (p) => `当前：${p}`,
       statusWinner: (p) => `获胜：${p}`,
       statusDraw: '平局',
+      roomTitle: '房间',
+      roomLabel: '房间编号 (1–9)',
+      roomHint: '输入 1–9 加入房间，0 表示未加入。',
+      joinBtn: '加入',
+      roomEnterHint: '请在左侧输入房间编号 (1–9) 并点击「加入」进入对局。',
+      firstVisitMessage: '欢迎！请在左侧输入房间编号 (1–9)，点击「加入」进入对应房间。',
+      gotIt: '知道了',
     },
   };
 
@@ -56,6 +75,8 @@
   const inputGridSize = document.getElementById('gridSize');
   const inputWinLength = document.getElementById('winLength');
   const btnNewGame = document.getElementById('btnNewGame');
+  const inputRoom = document.getElementById('inputRoom');
+  const btnJoinRoom = document.getElementById('btnJoinRoom');
 
   function t(key, ...args) {
     const pack = i18n[currentLang] || i18n.en;
@@ -80,6 +101,14 @@
     if (labelWinLengthEl) labelWinLengthEl.textContent = t('winLengthLabel');
     if (hintWinLengthEl) hintWinLengthEl.textContent = t('winLengthHint');
     if (btnNewGameEl) btnNewGameEl.textContent = t('newGame');
+    const roomTitleEl = document.getElementById('roomTitle');
+    const roomLabelEl = document.getElementById('roomLabel');
+    const roomHintEl = document.getElementById('roomHint');
+    const btnJoinEl = document.getElementById('btnJoinRoom');
+    if (roomTitleEl) roomTitleEl.textContent = t('roomTitle');
+    if (roomLabelEl) roomLabelEl.textContent = t('roomLabel');
+    if (roomHintEl) roomHintEl.textContent = t('roomHint');
+    if (btnJoinEl) btnJoinEl.textContent = t('joinBtn');
   }
 
   function updateLangButtons() {
@@ -236,27 +265,60 @@
   }
 
   function pushState() {
-    if (!hasFirebase() || applyingSnapshot) return;
+    const key = getRoomKey();
+    if (!key || !hasFirebase() || applyingSnapshot) return;
     const { db, ref, set } = window.firebaseRealtime;
     const state = serializeState();
     try {
-      set(ref(db, `rooms/${ROOM_ID}`), state);
+      set(ref(db, 'rooms/' + key), state);
     } catch (e) {
       // ignore errors in prototype
     }
   }
 
   function listenState() {
-    if (!hasFirebase()) return;
+    const key = getRoomKey();
+    if (!key || !hasFirebase()) return;
+    if (unsubscribeRoom) {
+      unsubscribeRoom();
+      unsubscribeRoom = null;
+    }
     const { db, ref, onValue } = window.firebaseRealtime;
-    const roomRef = ref(db, `rooms/${ROOM_ID}`);
-    onValue(roomRef, (snap) => {
+    const roomRef = ref(db, 'rooms/' + key);
+    unsubscribeRoom = onValue(roomRef, (snap) => {
       const data = snap.val();
       if (!data) return;
       applyingSnapshot = true;
       applyState(data);
       applyingSnapshot = false;
     });
+  }
+
+  function updateBoardVisibility() {
+    if (roomId === 0) {
+      boardWrap.innerHTML = '<p class="no-room-hint">' + t('roomEnterHint') + '</p>';
+      gameStatus.textContent = '';
+    } else {
+      renderBoard();
+      setStatusCurrent();
+    }
+  }
+
+  function joinRoom() {
+    const raw = parseInt(inputRoom.value, 10);
+    const next = isNaN(raw) ? 0 : Math.max(0, Math.min(9, raw));
+    inputRoom.value = next;
+    if (unsubscribeRoom) {
+      unsubscribeRoom();
+      unsubscribeRoom = null;
+    }
+    roomId = next;
+    if (roomId === 0) {
+      updateBoardVisibility();
+      return;
+    }
+    updateBoardVisibility();
+    listenState();
   }
 
   /** Whether current player can place on cell (i, j) */
@@ -479,6 +541,7 @@
   }
 
   function startNewGame() {
+    if (roomId === 0) return;
     gridSize = Math.max(3, Math.min(12, parseInt(inputGridSize.value, 10) || gridSize));
     winLength = Math.max(2, Math.min(Math.min(gridSize, gridSize + 1), parseInt(inputWinLength.value, 10) || winLength));
     inputGridSize.value = gridSize;
@@ -507,7 +570,10 @@
       currentLang = 'en';
       applyStaticTexts();
       updateLangButtons();
-      if (!gameOver) setStatusCurrent();
+      if (roomId === 0 && boardWrap.querySelector('.no-room-hint')) {
+        boardWrap.querySelector('.no-room-hint').textContent = t('roomEnterHint');
+      }
+      if (!gameOver && roomId !== 0) setStatusCurrent();
     });
   }
   if (btnLangZh) {
@@ -515,20 +581,61 @@
       currentLang = 'zh';
       applyStaticTexts();
       updateLangButtons();
-      if (!gameOver) setStatusCurrent();
+      if (roomId === 0 && boardWrap.querySelector('.no-room-hint')) {
+        boardWrap.querySelector('.no-room-hint').textContent = t('roomEnterHint');
+      }
+      if (!gameOver && roomId !== 0) setStatusCurrent();
     });
   }
-  inputGridSize.addEventListener('change', () => startNewGame());
-  inputWinLength.addEventListener('change', () => startNewGame());
+  inputGridSize.addEventListener('change', () => { if (roomId !== 0) startNewGame(); });
+  inputWinLength.addEventListener('change', () => { if (roomId !== 0) startNewGame(); });
+
+  if (btnJoinRoom) btnJoinRoom.addEventListener('click', joinRoom);
 
   applyStaticTexts();
   updateLangButtons();
-  // initialize inputs from default state, then start the first game
   inputGridSize.value = gridSize;
   inputWinLength.value = winLength;
-  startNewGame();
+  inputRoom.value = 0;
+  roomId = 0;
+  updateBoardVisibility();
+
+  if (!localStorage.getItem('intercross-toe-visited')) {
+    setTimeout(showFirstVisitModal, 300);
+  }
+
+  function showFirstVisitModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', 'Welcome');
+    const box = document.createElement('div');
+    box.className = 'modal-box';
+    const p = document.createElement('p');
+    p.className = 'modal-message';
+    p.textContent = t('firstVisitMessage');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn primary modal-btn';
+    btn.textContent = t('gotIt');
+    btn.addEventListener('click', function () {
+      localStorage.setItem('intercross-toe-visited', '1');
+      overlay.remove();
+    });
+    box.appendChild(p);
+    box.appendChild(btn);
+    overlay.appendChild(box);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        localStorage.setItem('intercross-toe-visited', '1');
+        overlay.remove();
+      }
+    });
+    document.body.appendChild(overlay);
+  }
 
   window.onFirebaseReady = function () {
-    listenState();
+    // Only auto-connect when already in a room (e.g. refresh)
+    if (roomId !== 0) listenState();
   };
 })();
